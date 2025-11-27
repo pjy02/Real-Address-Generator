@@ -145,6 +145,11 @@ const html = `
       transform: translateY(-1px);
       box-shadow: 0 8px 24px rgba(37, 99, 235, 0.12);
     }
+    .info-tile:focus-visible {
+      outline: 3px solid rgba(37, 99, 235, 0.35);
+      outline-offset: 2px;
+      box-shadow: 0 10px 32px rgba(37, 99, 235, 0.18);
+    }
     .label {
       display: block;
       color: var(--muted);
@@ -182,6 +187,26 @@ const html = `
     .btn.secondary { background: linear-gradient(120deg, #0ea5e9, var(--accent-2)); box-shadow: 0 10px 30px rgba(14, 165, 233, 0.25); }
     .btn:hover { transform: translateY(-1px); opacity: 0.95; }
     .btn:active { transform: translateY(0); }
+    .btn:focus-visible {
+      outline: 3px solid rgba(37, 99, 235, 0.35);
+      outline-offset: 2px;
+      box-shadow: 0 10px 32px rgba(37, 99, 235, 0.18);
+    }
+    .btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .btn.is-loading::after {
+      content: '…';
+      margin-left: 6px;
+      font-weight: 900;
+    }
+    .btn.primary { background: linear-gradient(120deg, var(--accent), #1d4ed8); box-shadow: 0 10px 30px rgba(37, 99, 235, 0.25); }
+    .btn.secondary { background: linear-gradient(120deg, #0ea5e9, var(--accent-2)); box-shadow: 0 10px 30px rgba(14, 165, 233, 0.25); }
+    .btn:hover { transform: translateY(-1px); opacity: 0.95; }
+    .btn:active { transform: translateY(0); }
     .copied {
       position: absolute;
       top: 12px;
@@ -194,6 +219,7 @@ const html = `
       font-weight: 700;
       box-shadow: 0 10px 30px rgba(34, 197, 94, 0.25);
     }
+    .copied.show { display: inline-flex; align-items: center; gap: 6px; }
     .country-select {
       margin: 12px 0 6px;
       display: flex;
@@ -257,6 +283,21 @@ const html = `
       transition: transform 0.12s ease, opacity 0.12s ease;
     }
     .delete-btn:hover { transform: translateY(-1px); opacity: 0.96; }
+    .delete-btn:focus-visible {
+      outline: 3px solid rgba(239, 68, 68, 0.35);
+      outline-offset: 2px;
+      box-shadow: 0 10px 32px rgba(239, 68, 68, 0.2);
+    }
+    .loading-notice {
+      display: none;
+      margin-top: 6px;
+      color: #0f172a;
+      font-weight: 700;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #e0f2fe;
+      border: 1px solid #bfdbfe;
+    }
     .footer {
       margin-top: 18px;
       padding: 10px 0;
@@ -283,47 +324,48 @@ const html = `
 
     <div class="layout">
       <div class="card">
-        <div class="copied" id="copied">Copied!</div>
+        <div class="copied" id="copied" role="status" aria-live="polite" aria-atomic="true">Copied!</div>
         <div class="card-title">Profile Snapshot ｜ 信息卡片</div>
         <div class="info-grid">
-          <div class="info-tile" onclick="copyToClipboard('${name}')">
+          <div class="info-tile" role="button" tabindex="0" aria-label="Copy name ${name}" onclick="copyToClipboard('${name}')" onkeydown="handleTileKey(event, '${name}')">
             <span class="label">Name 姓名</span>
             <div class="value">${name}</div>
           </div>
-          <div class="info-tile" onclick="copyToClipboard('${gender}')">
+          <div class="info-tile" role="button" tabindex="0" aria-label="Copy gender ${gender}" onclick="copyToClipboard('${gender}')" onkeydown="handleTileKey(event, '${gender}')">
             <span class="label">Gender 性别</span>
             <div class="value">${gender}</div>
           </div>
-          <div class="info-tile" onclick="copyToClipboard('${phone.replace(/[()\s-]/g, '')}')">
+          <div class="info-tile" role="button" tabindex="0" aria-label="Copy phone ${phone.replace(/[()\s-]/g, '')}" onclick="copyToClipboard('${phone.replace(/[()\\s-]/g, '')}')" onkeydown="handleTileKey(event, '${phone.replace(/[()\\s-]/g, '')}')">
             <span class="label">Phone 电话</span>
             <div class="value">${phone}</div>
           </div>
-          <div class="info-tile" onclick="copyToClipboard('${stateProvince || 'Unknown'}')">
+          <div class="info-tile" role="button" tabindex="0" aria-label="Copy state or province ${stateProvince || 'Unknown'}" onclick="copyToClipboard('${stateProvince || 'Unknown'}')" onkeydown="handleTileKey(event, '${stateProvince || 'Unknown'}')">
             <span class="label">State / Province 州 / 省</span>
             <div class="value">${stateProvince || '—'}</div>
           </div>
-          <div class="info-tile" onclick="copyToClipboard('${cityName || 'Unknown'}')">
+          <div class="info-tile" role="button" tabindex="0" aria-label="Copy city ${cityName || 'Unknown'}" onclick="copyToClipboard('${cityName || 'Unknown'}')" onkeydown="handleTileKey(event, '${cityName || 'Unknown'}')">
             <span class="label">City 城市</span>
             <div class="value">${cityName || '—'}</div>
           </div>
-          <div class="info-tile" onclick="copyToClipboard('${streetLine || 'Unknown'}')">
+          <div class="info-tile" role="button" tabindex="0" aria-label="Copy street ${streetLine || 'Unknown'}" onclick="copyToClipboard('${streetLine || 'Unknown'}')" onkeydown="handleTileKey(event, '${streetLine || 'Unknown'}')">
             <span class="label">Street Address 街道地址</span>
             <div class="value">${streetLine || '—'}</div>
           </div>
-          <div class="info-tile" onclick="copyToClipboard('${postalCode || 'Unknown'}')">
+          <div class="info-tile" role="button" tabindex="0" aria-label="Copy postal code ${postalCode || 'Unknown'}" onclick="copyToClipboard('${postalCode || 'Unknown'}')" onkeydown="handleTileKey(event, '${postalCode || 'Unknown'}')">
             <span class="label">Postal Code 邮政编码</span>
             <div class="value">${postalCode || '—'}</div>
           </div>
-          <div class="info-tile" onclick="copyToClipboard('${address}')">
+          <div class="info-tile" role="button" tabindex="0" aria-label="Copy full address" onclick="copyToClipboard('${address}')" onkeydown="handleTileKey(event, '${address}')">
             <span class="label">Address 地址</span>
             <div class="value">${address}</div>
           </div>
         </div>
 
         <div class="actions">
-          <button class="btn primary" onclick="window.location.reload();">🔄 Get Another Address 获取新地址</button>
-          <button class="btn secondary" onclick="saveAddress();">💾 Save Address 保存地址</button>
+          <button class="btn primary" id="refreshBtn" aria-label="Get another address" onclick="beginRefresh();">🔄 Get Another Address 获取新地址</button>
+          <button class="btn secondary" id="saveBtn" aria-label="Save this address" onclick="saveAddress();">💾 Save Address 保存地址</button>
         </div>
+        <div id="loadingNotice" class="loading-notice" role="status" aria-live="polite">Loading new data…</div>
 
         <div class="country-select">
           <label for="country">Select country (auto-refresh) ｜ 选择国家（自动刷新）</label>
@@ -368,16 +410,62 @@ const html = `
   </div>
 
   <script>
+    function setLoading(isLoading, label = 'Loading…') {
+      const refreshBtn = document.getElementById('refreshBtn')
+      const saveBtn = document.getElementById('saveBtn')
+      const countrySelect = document.getElementById('country')
+      const loadingNotice = document.getElementById('loadingNotice')
+
+      ;[refreshBtn, saveBtn, countrySelect].forEach(el => {
+        if (!el) return
+        el.disabled = isLoading
+        if (isLoading) {
+          el.classList.add('is-loading')
+          el.setAttribute('aria-busy', 'true')
+        } else {
+          el.classList.remove('is-loading')
+          el.removeAttribute('aria-busy')
+        }
+      })
+
+      if (refreshBtn) {
+        if (!refreshBtn.dataset.originalText) refreshBtn.dataset.originalText = refreshBtn.textContent
+        refreshBtn.textContent = isLoading ? label : refreshBtn.dataset.originalText
+      }
+
+      if (loadingNotice) {
+        loadingNotice.style.display = isLoading ? 'inline-flex' : 'none'
+        loadingNotice.textContent = label
+      }
+    }
+
     function copyToClipboard(text) {
       navigator.clipboard.writeText(text).then(() => {
         const copied = document.getElementById('copied')
-        copied.style.display = 'block'
-        setTimeout(() => {
-          copied.style.display = 'none'
-        }, 2000)
+        if (copied) {
+          copied.textContent = 'Copied to clipboard'
+          copied.classList.add('show')
+          setTimeout(() => {
+            copied.classList.remove('show')
+          }, 2000)
+        }
       })
     }
+
+    function handleTileKey(event, text) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        copyToClipboard(text)
+      }
+    }
+
+    function beginRefresh() {
+      setLoading(true, 'Loading new data…')
+      window.location.reload()
+    }
+
     function changeCountry(country) {
+      setLoading(true, 'Loading new country…')
       window.location.href = \`?country=\${country}\`
     }
     function saveAddress() {
