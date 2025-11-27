@@ -30,18 +30,10 @@ async function handleRequest(request) {
     return new Response('Failed to retrieve detailed address, please refresh the interface （检索详细地址失败，请刷新界面）', { status: 500 })
   }
 
-  const userData = await fetch('https://randomuser.me/api/')
-  const userJson = await userData.json()
-  if (userJson && userJson.results && userJson.results.length > 0) {
-    const user = userJson.results[0]
-    name = `${user.name.first} ${user.name.last}`
-    gender = user.gender.charAt(0).toUpperCase() + user.gender.slice(1)
-    phone = getRandomPhoneNumber(country)
-  } else {
-    name = getRandomName()
-    gender = "Unknown"
-    phone = getRandomPhoneNumber(country)
-  }
+  const profile = await generateName(country)
+  name = profile.name
+  gender = profile.gender
+  phone = getRandomPhoneNumber(country)
 
 const html = `
 <!DOCTYPE html>
@@ -684,4 +676,98 @@ function getCountryOptions(selectedCountry) {
     .sort((a, b) => a.english.localeCompare(b.english))
     .map(({ name, code }) => `<option value="${code}" ${code === selectedCountry ? 'selected' : ''}>${name}</option>`)
     .join('')
+}
+
+async function generateName(country) {
+  const natMap = {
+    US: 'us',
+    UK: 'gb',
+    FR: 'fr',
+    DE: 'de',
+    BR: 'br',
+    AU: 'au',
+    CA: 'ca',
+    TR: 'tr',
+    MX: 'mx',
+    ES: 'es'
+  }
+
+  const genderOptions = ['male', 'female']
+  const chosenGender = genderOptions[Math.floor(Math.random() * genderOptions.length)]
+  const nat = natMap[country]
+
+  if (nat) {
+    try {
+      const res = await fetch(`https://randomuser.me/api/?nat=${nat}&gender=${chosenGender}`)
+      const json = await res.json()
+      if (json && json.results && json.results.length > 0) {
+        const user = json.results[0]
+        return {
+          name: `${capitalize(user.name.first)} ${capitalize(user.name.last)}`,
+          gender: capitalize(chosenGender)
+        }
+      }
+    } catch (e) {
+      // Fallback to local pools below
+    }
+  }
+
+  return getLocalizedFallbackName(country, chosenGender)
+}
+
+function getLocalizedFallbackName(country, gender) {
+  const commonSurnamesCN = ['王', '李', '张', '刘', '陈', '杨', '赵', '黄', '周', '吴']
+  const givenMaleCN = ['伟', '强', '磊', '洋', '勇', '超', '俊杰', '浩', '鹏', '宇']
+  const givenFemaleCN = ['娜', '娟', '艳', '静', '敏', '丽', '霞', '莹', '丹', '芳']
+
+  const spanishSurnames = ['García', 'Martínez', 'Rodríguez', 'López', 'Hernández', 'González']
+  const spanishMale = ['Juan', 'Carlos', 'José', 'Luis', 'Miguel', 'Andrés']
+  const spanishFemale = ['María', 'Ana', 'Lucía', 'Carmen', 'Isabella', 'Sofía']
+
+  const englishSurnames = ['Smith', 'Johnson', 'Brown', 'Taylor', 'Williams', 'Wilson']
+  const englishMale = ['James', 'Daniel', 'Michael', 'William', 'Joseph', 'Andrew']
+  const englishFemale = ['Emily', 'Sophia', 'Olivia', 'Charlotte', 'Amelia', 'Grace']
+
+  const pools = {
+    CN: {
+      surnames: commonSurnamesCN,
+      male: givenMaleCN,
+      female: givenFemaleCN,
+      formatter: (surname, given) => `${surname}${given}`
+    },
+    TW: {
+      surnames: commonSurnamesCN,
+      male: givenMaleCN,
+      female: givenFemaleCN,
+      formatter: (surname, given) => `${surname}${given}`
+    },
+    HK: {
+      surnames: commonSurnamesCN,
+      male: givenMaleCN,
+      female: givenFemaleCN,
+      formatter: (surname, given) => `${surname}${given}`
+    },
+    ES: { surnames: spanishSurnames, male: spanishMale, female: spanishFemale },
+    MX: { surnames: spanishSurnames, male: spanishMale, female: spanishFemale },
+    AR: { surnames: spanishSurnames, male: spanishMale, female: spanishFemale },
+    default: { surnames: englishSurnames, male: englishMale, female: englishFemale }
+  }
+
+  const pool = pools[country] || pools.default
+  const surname = randomFrom(pool.surnames)
+  const given = randomFrom(gender === 'male' ? pool.male : pool.female)
+  const formatter = pool.formatter || ((last, first) => `${first} ${last}`)
+
+  return {
+    name: formatter(surname, given),
+    gender: capitalize(gender)
+  }
+}
+
+function randomFrom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1)
 }
