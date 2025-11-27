@@ -512,8 +512,8 @@ function formatAddress(address, country) {
   const street = address.house_number && address.road ? `${address.house_number} ${address.road}` : address.road || ''
   const postalCode = address.postcode
   const parts = [
-    city,
     street,
+    city,
     state,
     postalCode,
     country
