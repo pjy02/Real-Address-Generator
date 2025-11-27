@@ -203,6 +203,11 @@ const html = `
       margin-left: 6px;
       font-weight: 900;
     }
+    .btn.is-loading::after {
+      content: '…';
+      margin-left: 6px;
+      font-weight: 900;
+    }
     .btn.primary { background: linear-gradient(120deg, var(--accent), #1d4ed8); box-shadow: 0 10px 30px rgba(37, 99, 235, 0.25); }
     .btn.secondary { background: linear-gradient(120deg, #0ea5e9, var(--accent-2)); box-shadow: 0 10px 30px rgba(14, 165, 233, 0.25); }
     .btn:hover { transform: translateY(-1px); opacity: 0.95; }
@@ -612,129 +617,247 @@ function formatAddress(address, country) {
 
 
 function getRandomPhoneNumber(country) {
-  const phoneFormats = {
-    "US": () => {
-      const areaCode = Math.floor(200 + Math.random() * 800).toString().padStart(3, '0')
-      const exchangeCode = Math.floor(200 + Math.random() * 800).toString().padStart(3, '0')
-      const lineNumber = Math.floor(1000 + Math.random() * 9000).toString().padStart(4, '0')
-      return `+1 (${areaCode}) ${exchangeCode}-${lineNumber}`
+  const patterns = {
+    US: {
+      regex: /^\+1 \([2-9]\d{2}\) [2-9]\d{2}-\d{4}$/,
+      generate: () => {
+        const areaCode = `${randomDigitInRange(2, 9)}${randomDigit()}${randomDigit()}`
+        const exchangeCode = `${randomDigitInRange(2, 9)}${randomDigit()}${randomDigit()}`
+        const lineNumber = `${Math.floor(1000 + Math.random() * 9000)}`
+        return `+1 (${areaCode}) ${exchangeCode}-${lineNumber}`
+      }
     },
-    "UK": () => {
-      const areaCode = Math.floor(1000 + Math.random() * 9000).toString()
-      const lineNumber = Math.floor(100000 + Math.random() * 900000).toString()
-      return `+44 ${areaCode} ${lineNumber}`
+    CA: {
+      regex: /^\+1 \([2-9]\d{2}\) [2-9]\d{2}-\d{4}$/,
+      generate: () => {
+        const areaCode = `${randomDigitInRange(2, 9)}${randomDigit()}${randomDigit()}`
+        const exchangeCode = `${randomDigitInRange(2, 9)}${randomDigit()}${randomDigit()}`
+        const lineNumber = `${Math.floor(1000 + Math.random() * 9000)}`
+        return `+1 (${areaCode}) ${exchangeCode}-${lineNumber}`
+      }
     },
-    "FR": () => {
-      const digit = Math.floor(1 + Math.random() * 8)
-      const number = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+33 ${digit} ${number}`
+    UK: {
+      regex: /^\+44 7\d{3} \d{6}$/,
+      generate: () => {
+        const subscriber = Array.from({ length: 6 }, randomDigit).join('')
+        const prefix = `${randomDigitInRange(0, 9)}${randomDigit()}${randomDigit()}`
+        return `+44 7${prefix} ${subscriber}`
+      }
     },
-    "DE": () => {
-      const areaCode = Math.floor(100 + Math.random() * 900).toString()
-      const number = Array.from({ length: 7 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+49 ${areaCode} ${number}`
+    FR: {
+      regex: /^\+33 [67] \d{2} \d{2} \d{2} \d{2}$/,
+      generate: () => {
+        const segments = Array.from({ length: 4 }, () => `${randomDigit()}${randomDigit()}`)
+        const lead = randomFrom(['6', '7'])
+        return `+33 ${lead} ${segments.join(' ')}`
+      }
     },
-    "CN": () => {
-      const prefix = Math.floor(130 + Math.random() * 60).toString()
-      const number = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+86 ${prefix} ${number}`
+    DE: {
+      regex: /^\+49 1[5-7]\d \d{7}$/,
+      generate: () => {
+        const lead = randomFrom(['15', '16', '17'])
+        const mid = randomDigit()
+        const tail = Array.from({ length: 7 }, randomDigit).join('')
+        return `+49 ${lead}${mid} ${tail}`
+      }
     },
-    "TW": () => {
-      const number = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('');
-      return `+886 9${number}`;
+    CN: {
+      regex: /^\+86 1[3-9]\d \d{4} \d{4}$/,
+      generate: () => {
+        const start = `${randomDigitInRange(3, 9)}${randomDigit()}`
+        const block1 = Array.from({ length: 4 }, randomDigit).join('')
+        const block2 = Array.from({ length: 4 }, randomDigit).join('')
+        return `+86 1${start} ${block1} ${block2}`
+      }
     },
-    "HK": () => {
-      const number = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('');
-      return `+852 ${number}`;
+    TW: {
+      regex: /^\+886 9\d{2} \d{3} \d{3}$/,
+      generate: () => {
+        const block1 = `${randomDigit()}${randomDigit()}`
+        const block2 = Array.from({ length: 3 }, randomDigit).join('')
+        const block3 = Array.from({ length: 3 }, randomDigit).join('')
+        return `+886 9${block1} ${block2} ${block3}`
+      }
     },
-    "JP": () => {
-      const areaCode = Math.floor(10 + Math.random() * 90).toString()
-      const number = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+81 ${areaCode} ${number}`
+    HK: {
+      regex: /^\+852 [569]\d{3} \d{4}$/,
+      generate: () => {
+        const start = randomFrom(['5', '6', '9'])
+        const block1 = `${randomDigit()}${randomDigit()}${randomDigit()}`
+        const block2 = Array.from({ length: 4 }, randomDigit).join('')
+        return `+852 ${start}${block1} ${block2}`
+      }
     },
-    "IN": () => {
-      const prefix = Math.floor(700 + Math.random() * 100).toString()
-      const number = Array.from({ length: 7 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+91 ${prefix} ${number}`
+    JP: {
+      regex: /^\+81 0?[789]0 \d{4} \d{4}$/,
+      generate: () => {
+        const lead = randomFrom(['70', '80', '90'])
+        const block1 = Array.from({ length: 4 }, randomDigit).join('')
+        const block2 = Array.from({ length: 4 }, randomDigit).join('')
+        return `+81 ${lead} ${block1} ${block2}`
+      }
     },
-    "AU": () => {
-      const areaCode = Math.floor(2 + Math.random() * 8).toString()
-      const number = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+61 ${areaCode} ${number}`
+    IN: {
+      regex: /^\+91 [6-9]\d \d{3} \d{4}$/,
+      generate: () => {
+        const start = `${randomDigitInRange(6, 9)}${randomDigit()}`
+        const block1 = Array.from({ length: 3 }, randomDigit).join('')
+        const block2 = Array.from({ length: 4 }, randomDigit).join('')
+        return `+91 ${start} ${block1} ${block2}`
+      }
     },
-    "BR": () => {
-      const areaCode = Math.floor(10 + Math.random() * 90).toString()
-      const number = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+55 ${areaCode} ${number}`
+    AU: {
+      regex: /^\+61 4\d \d{3} \d{3}$/,
+      generate: () => {
+        const block1 = `${randomDigit()}${randomDigit()}`
+        const block2 = Array.from({ length: 3 }, randomDigit).join('')
+        const block3 = Array.from({ length: 3 }, randomDigit).join('')
+        return `+61 4${block1} ${block2} ${block3}`
+      }
     },
-    "CA": () => {
-      const areaCode = Math.floor(200 + Math.random() * 800).toString().padStart(3, '0')
-      const exchangeCode = Math.floor(200 + Math.random() * 800).toString().padStart(3, '0')
-      const lineNumber = Math.floor(1000 + Math.random() * 9000).toString().padStart(4, '0')
-      return `+1 (${areaCode}) ${exchangeCode}-${lineNumber}`
+    BR: {
+      regex: /^\+55 \d{2} 9\d{4} \d{4}$/,
+      generate: () => {
+        const ddd = `${randomDigitInRange(1, 9)}${randomDigit()}`
+        const block1 = `9${Array.from({ length: 4 }, randomDigit).join('')}`
+        const block2 = Array.from({ length: 4 }, randomDigit).join('')
+        return `+55 ${ddd} ${block1} ${block2}`
+      }
     },
-    "RU": () => {
-      const areaCode = Math.floor(100 + Math.random() * 900).toString()
-      const number = Array.from({ length: 7 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+7 ${areaCode} ${number}`
+    RU: {
+      regex: /^\+7 9\d{2} \d{3} \d{2} \d{2}$/,
+      generate: () => {
+        const block1 = `${randomDigit()}${randomDigit()}`
+        const block2 = Array.from({ length: 3 }, randomDigit).join('')
+        const block3 = Array.from({ length: 2 }, randomDigit).join('')
+        const block4 = Array.from({ length: 2 }, randomDigit).join('')
+        return `+7 9${block1} ${block2} ${block3} ${block4}`
+      }
     },
-    "ZA": () => {
-      const areaCode = Math.floor(10 + Math.random() * 90).toString()
-      const number = Array.from({ length: 7 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+27 ${areaCode} ${number}`
+    ZA: {
+      regex: /^\+27 [6-8]\d \d{3} \d{4}$/,
+      generate: () => {
+        const start = randomFrom(['6', '7', '8'])
+        const mid = `${randomDigit()}`
+        const block1 = Array.from({ length: 3 }, randomDigit).join('')
+        const block2 = Array.from({ length: 4 }, randomDigit).join('')
+        return `+27 ${start}${mid} ${block1} ${block2}`
+      }
     },
-    "MX": () => {
-      const areaCode = Math.floor(10 + Math.random() * 90).toString()
-      const number = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+52 ${areaCode} ${number}`
+    MX: {
+      regex: /^\+52 1?\d{2} \d{4} \d{4}$/,
+      generate: () => {
+        const prefix = randomFrom(['', '1'])
+        const area = `${randomDigit()}${randomDigit()}`
+        const block1 = Array.from({ length: 4 }, randomDigit).join('')
+        const block2 = Array.from({ length: 4 }, randomDigit).join('')
+        return `+52 ${prefix}${area} ${block1} ${block2}`.replace('  ', ' ')
+      }
     },
-    "KR": () => {
-      const areaCode = Math.floor(10 + Math.random() * 90).toString()
-      const number = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+82 ${areaCode} ${number}`
+    KR: {
+      regex: /^\+82 10 \d{4} \d{4}$/,
+      generate: () => {
+        const block1 = Array.from({ length: 4 }, randomDigit).join('')
+        const block2 = Array.from({ length: 4 }, randomDigit).join('')
+        return `+82 10 ${block1} ${block2}`
+      }
     },
-    "IT": () => {
-      const areaCode = Math.floor(10 + Math.random() * 90).toString()
-      const number = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+39 ${areaCode} ${number}`
+    IT: {
+      regex: /^\+39 3\d \d{3} \d{4}$/,
+      generate: () => {
+        const mid = `${randomDigit()}`
+        const block1 = Array.from({ length: 3 }, randomDigit).join('')
+        const block2 = Array.from({ length: 4 }, randomDigit).join('')
+        return `+39 3${mid} ${block1} ${block2}`
+      }
     },
-    "ES": () => {
-      const areaCode = Math.floor(10 + Math.random() * 90).toString()
-      const number = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+34 ${areaCode} ${number}`
+    ES: {
+      regex: /^\+34 [67]\d \d{3} \d{3}$/,
+      generate: () => {
+        const start = randomFrom(['6', '7'])
+        const mid = `${randomDigit()}`
+        const block1 = Array.from({ length: 3 }, randomDigit).join('')
+        const block2 = Array.from({ length: 3 }, randomDigit).join('')
+        return `+34 ${start}${mid} ${block1} ${block2}`
+      }
     },
-    "TR": () => {
-      const areaCode = Math.floor(200 + Math.random() * 800).toString().padStart(3, '0')
-      const number = Array.from({ length: 7 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+90 ${areaCode} ${number}`
+    TR: {
+      regex: /^\+90 5\d{2} \d{3} \d{2} \d{2}$/,
+      generate: () => {
+        const mid = `${randomDigit()}${randomDigit()}`
+        const block1 = Array.from({ length: 3 }, randomDigit).join('')
+        const block2 = Array.from({ length: 2 }, randomDigit).join('')
+        const block3 = Array.from({ length: 2 }, randomDigit).join('')
+        return `+90 5${mid} ${block1} ${block2} ${block3}`
+      }
     },
-    "SA": () => {
-      const areaCode = Math.floor(10 + Math.random() * 90).toString()
-      const number = Array.from({ length: 7 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+966 ${areaCode} ${number}`
+    SA: {
+      regex: /^\+966 5\d{2} \d{3} \d{4}$/,
+      generate: () => {
+        const mid = `${randomDigit()}${randomDigit()}`
+        const block1 = Array.from({ length: 3 }, randomDigit).join('')
+        const block2 = Array.from({ length: 4 }, randomDigit).join('')
+        return `+966 5${mid} ${block1} ${block2}`
+      }
     },
-    "AR": () => {
-      const areaCode = Math.floor(10 + Math.random() * 90).toString()
-      const number = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+54 ${areaCode} ${number}`
+    AR: {
+      regex: /^\+54 9?\d{2} \d{3,4} \d{4}$/,
+      generate: () => {
+        const mobileFlag = randomFrom(['', '9'])
+        const area = `${randomDigit()}${randomDigit()}`
+        const block1 = Array.from({ length: mobileFlag ? 4 : 3 }, randomDigit).join('')
+        const block2 = Array.from({ length: 4 }, randomDigit).join('')
+        return `+54 ${mobileFlag}${area} ${block1} ${block2}`.replace('  ', ' ')
+      }
     },
-    "EG": () => {
-      const areaCode = Math.floor(10 + Math.random() * 90).toString()
-      const number = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+20 ${areaCode} ${number}`
+    EG: {
+      regex: /^\+20 1[0-5]\d \d{4} \d{3}$/,
+      generate: () => {
+        const mid = randomFrom(['0', '1', '2', '5'])
+        const rest = `${randomDigit()}`
+        const block1 = Array.from({ length: 4 }, randomDigit).join('')
+        const block2 = Array.from({ length: 3 }, randomDigit).join('')
+        return `+20 1${mid}${rest} ${block1} ${block2}`
+      }
     },
-    "NG": () => {
-      const areaCode = Math.floor(10 + Math.random() * 90).toString()
-      const number = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+234 ${areaCode} ${number}`
+    NG: {
+      regex: /^\+234 [789]\d \d{3} \d{4}$/,
+      generate: () => {
+        const start = randomFrom(['7', '8', '9'])
+        const mid = `${randomDigit()}`
+        const block1 = Array.from({ length: 3 }, randomDigit).join('')
+        const block2 = Array.from({ length: 4 }, randomDigit).join('')
+        return `+234 ${start}${mid} ${block1} ${block2}`
+      }
     },
-    "ID": () => {
-      const areaCode = Math.floor(10 + Math.random() * 90).toString()
-      const number = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('')
-      return `+62 ${areaCode} ${number}`
+    ID: {
+      regex: /^\+62 8\d \d{3} \d{4}$/,
+      generate: () => {
+        const mid = `${randomDigit()}`
+        const block1 = Array.from({ length: 3 }, randomDigit).join('')
+        const block2 = Array.from({ length: 4 }, randomDigit).join('')
+        return `+62 8${mid} ${block1} ${block2}`
+      }
     }
   }
-  return phoneFormats[country]()
+
+  const generator = patterns[country] || patterns.US
+  for (let i = 0; i < 5; i++) {
+    const phone = generator.generate()
+    if (generator.regex.test(phone)) {
+      return phone
+    }
+  }
+
+  return '+1 (555) 010-0000'
+}
+
+function randomDigit() {
+  return Math.floor(Math.random() * 10)
+}
+
+function randomDigitInRange(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
 function getRandomCountry() {
@@ -777,6 +900,14 @@ function getCountryOptions(selectedCountry) {
 }
 
 async function generateName(country) {
+  const genderOptions = ['male', 'female']
+  const chosenGender = genderOptions[Math.floor(Math.random() * genderOptions.length)]
+  const localName = getLocalizedName(country, chosenGender)
+
+  if (localName) {
+    return localName
+  }
+
   const natMap = {
     US: 'us',
     UK: 'gb',
@@ -787,11 +918,11 @@ async function generateName(country) {
     CA: 'ca',
     TR: 'tr',
     MX: 'mx',
-    ES: 'es'
+    ES: 'es',
+    IT: 'it',
+    JP: 'jp'
   }
 
-  const genderOptions = ['male', 'female']
-  const chosenGender = genderOptions[Math.floor(Math.random() * genderOptions.length)]
   const nat = natMap[country]
 
   if (nat) {
@@ -806,27 +937,68 @@ async function generateName(country) {
         }
       }
     } catch (e) {
-      // Fallback to local pools below
+      // fall back below
     }
   }
 
-  return getLocalizedFallbackName(country, chosenGender)
+  return getLocalizedName('default', chosenGender)
 }
 
-function getLocalizedFallbackName(country, gender) {
-  const commonSurnamesCN = ['王', '李', '张', '刘', '陈', '杨', '赵', '黄', '周', '吴']
-  const givenMaleCN = ['伟', '强', '磊', '洋', '勇', '超', '俊杰', '浩', '鹏', '宇']
-  const givenFemaleCN = ['娜', '娟', '艳', '静', '敏', '丽', '霞', '莹', '丹', '芳']
+function getLocalizedName(country, gender) {
+  const commonSurnamesCN = ['王', '李', '张', '刘', '陈', '杨', '赵', '黄', '周', '吴', '徐', '孙', '朱', '马', '胡', '郭', '何', '高', '林', '罗']
+  const givenMaleCN = ['伟', '强', '磊', '洋', '勇', '超', '俊杰', '浩', '鹏', '宇', '晨', '涛', '凯', '俊', '泽民', '世杰']
+  const givenFemaleCN = ['娜', '娟', '艳', '静', '敏', '丽', '霞', '莹', '丹', '芳', '璐', '婷婷', '梅', '雅琴', '慧', '雪']
 
-  const spanishSurnames = ['García', 'Martínez', 'Rodríguez', 'López', 'Hernández', 'González']
-  const spanishMale = ['Juan', 'Carlos', 'José', 'Luis', 'Miguel', 'Andrés']
-  const spanishFemale = ['María', 'Ana', 'Lucía', 'Carmen', 'Isabella', 'Sofía']
+  const spanishSurnames = ['García', 'Martínez', 'Rodríguez', 'López', 'Hernández', 'González', 'Pérez', 'Sánchez', 'Ramírez', 'Torres']
+  const spanishMale = ['Juan', 'Carlos', 'José', 'Luis', 'Miguel', 'Andrés', 'Diego', 'Fernando', 'Ricardo', 'Hugo']
+  const spanishFemale = ['María', 'Ana', 'Lucía', 'Carmen', 'Isabella', 'Sofía', 'Valentina', 'Camila', 'Elena', 'Gabriela']
 
-  const englishSurnames = ['Smith', 'Johnson', 'Brown', 'Taylor', 'Williams', 'Wilson']
-  const englishMale = ['James', 'Daniel', 'Michael', 'William', 'Joseph', 'Andrew']
-  const englishFemale = ['Emily', 'Sophia', 'Olivia', 'Charlotte', 'Amelia', 'Grace']
+  const englishSurnames = ['Smith', 'Johnson', 'Brown', 'Taylor', 'Williams', 'Wilson', 'Davis', 'Clark', 'Thompson', 'Anderson', 'Moore', 'Martin']
+  const englishMale = ['James', 'Daniel', 'Michael', 'William', 'Joseph', 'Andrew', 'Benjamin', 'Ethan', 'Samuel', 'Thomas', 'Henry', 'Jack']
+  const englishFemale = ['Emily', 'Sophia', 'Olivia', 'Charlotte', 'Amelia', 'Grace', 'Ava', 'Isabella', 'Mia', 'Harper', 'Ella', 'Chloe']
+
+  const frenchSurnames = ['Dubois', 'Martin', 'Bernard', 'Durand', 'Lefevre', 'Moreau', 'Laurent', 'Simon', 'Michel', 'Garcia']
+  const frenchMale = ['Louis', 'Hugo', 'Arthur', 'Gabriel', 'Lucas', 'Jules', 'Nathan', 'Theo', 'Leo', 'Antoine']
+  const frenchFemale = ['Emma', 'Louise', 'Chloé', 'Camille', 'Manon', 'Alice', 'Jeanne', 'Inès', 'Sarah', 'Léna']
+
+  const germanSurnames = ['Müller', 'Schmidt', 'Schneider', 'Fischer', 'Weber', 'Meyer', 'Wagner', 'Becker', 'Hoffmann', 'Schäfer']
+  const germanMale = ['Lukas', 'Finn', 'Leon', 'Paul', 'Jonas', 'Felix', 'Maximilian', 'Tim', 'Niklas', 'Julian']
+  const germanFemale = ['Mia', 'Hanna', 'Emma', 'Lea', 'Marie', 'Lena', 'Anna', 'Sofia', 'Laura', 'Emily']
+
+  const italianSurnames = ['Rossi', 'Russo', 'Ferrari', 'Esposito', 'Bianchi', 'Romano', 'Gallo', 'Costa', 'Fontana', 'Moretti']
+  const italianMale = ['Lorenzo', 'Andrea', 'Matteo', 'Francesco', 'Alessandro', 'Davide', 'Gabriele', 'Marco', 'Diego', 'Paolo']
+  const italianFemale = ['Giulia', 'Sofia', 'Aurora', 'Martina', 'Giorgia', 'Alice', 'Chiara', 'Elena', 'Camilla', 'Beatrice']
+
+  const japaneseSurnames = ['佐藤', '鈴木', '高橋', '田中', '渡辺', '伊藤', '山本', '中村', '小林', '加藤']
+  const japaneseMale = ['蓮', '大和', '颯太', '陽翔', '悠真', '湊', '陸斗', '陽太', '蒼', '悠人']
+  const japaneseFemale = ['葵', '陽菜', 'さくら', '美咲', '結衣', '凛', '結愛', '楓', '咲良', '心春']
+
+  const indianSurnames = ['Singh', 'Kumar', 'Sharma', 'Patel', 'Gupta', 'Reddy', 'Varma', 'Iyer', 'Nair', 'Khan']
+  const indianMale = ['Aarav', 'Vivaan', 'Aditya', 'Arjun', 'Reyansh', 'Ishaan', 'Krishna', 'Rohan', 'Kabir', 'Dhruv']
+  const indianFemale = ['Aadhya', 'Siya', 'Anaya', 'Ira', 'Myra', 'Diya', 'Aarohi', 'Navya', 'Pari', 'Mira']
+
+  const portugueseSurnames = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Rodrigues', 'Ferreira', 'Almeida', 'Costa', 'Gomes', 'Martins']
+  const portugueseMale = ['Gabriel', 'Lucas', 'Matheus', 'Guilherme', 'Rafael', 'Felipe', 'João', 'Pedro', 'Thiago', 'Bruno']
+  const portugueseFemale = ['Maria', 'Ana', 'Beatriz', 'Juliana', 'Camila', 'Letícia', 'Fernanda', 'Carolina', 'Patrícia', 'Larissa']
+
+  const russianSurnames = ['Ivanov', 'Smirnov', 'Kuznetsov', 'Popov', 'Vasiliev', 'Petrov', 'Sokolov', 'Mikhailov', 'Fedorov', 'Morozov']
+  const russianMale = ['Alexander', 'Dmitry', 'Ivan', 'Sergey', 'Mikhail', 'Nikolai', 'Pavel', 'Andrei', 'Yuri', 'Vladimir']
+  const russianFemale = ['Anna', 'Elena', 'Olga', 'Natalia', 'Tatiana', 'Irina', 'Ekaterina', 'Maria', 'Svetlana', 'Galina']
+
+  const turkishSurnames = ['Yılmaz', 'Kaya', 'Demir', 'Çelik', 'Şahin', 'Yıldız', 'Yıldırım', 'Aydın', 'Öztürk', 'Arslan']
+  const turkishMale = ['Mehmet', 'Mustafa', 'Ahmet', 'Ali', 'Hüseyin', 'İbrahim', 'Hasan', 'Murat', 'Ömer', 'Yusuf']
+  const turkishFemale = ['Fatma', 'Ayşe', 'Emine', 'Hatice', 'Zeynep', 'Elif', 'Merve', 'Esra', 'Sultan', 'Büşra']
+
+  const arabicSurnames = ['Al Harbi', 'Al Qahtani', 'Al Otaibi', 'Al Shammari', 'Al Zahrani', 'Al Ghamdi', 'Al Mutairi', 'Al Dosari', 'Al Suwaidi', 'Al Hajri']
+  const arabicMale = ['Abdullah', 'Mohammed', 'Fahad', 'Saud', 'Khalid', 'Faisal', 'Abdulrahman', 'Nasser', 'Turki', 'Majed']
+  const arabicFemale = ['Aisha', 'Fatimah', 'Noura', 'Hessa', 'Maryam', 'Jawaher', 'Lama', 'Dania', 'Reem', 'Amal']
 
   const pools = {
+    US: { surnames: englishSurnames, male: englishMale, female: englishFemale },
+    UK: { surnames: englishSurnames, male: englishMale, female: englishFemale },
+    AU: { surnames: englishSurnames, male: englishMale, female: englishFemale },
+    CA: { surnames: englishSurnames, male: englishMale, female: englishFemale },
+    ZA: { surnames: englishSurnames, male: englishMale, female: englishFemale },
     CN: {
       surnames: commonSurnamesCN,
       male: givenMaleCN,
@@ -845,15 +1017,28 @@ function getLocalizedFallbackName(country, gender) {
       female: givenFemaleCN,
       formatter: (surname, given) => `${surname}${given}`
     },
+    JP: { surnames: japaneseSurnames, male: japaneseMale, female: japaneseFemale, formatter: (surname, given) => `${surname}${given}` },
     ES: { surnames: spanishSurnames, male: spanishMale, female: spanishFemale },
     MX: { surnames: spanishSurnames, male: spanishMale, female: spanishFemale },
     AR: { surnames: spanishSurnames, male: spanishMale, female: spanishFemale },
+    FR: { surnames: frenchSurnames, male: frenchMale, female: frenchFemale },
+    DE: { surnames: germanSurnames, male: germanMale, female: germanFemale },
+    IT: { surnames: italianSurnames, male: italianMale, female: italianFemale },
+    IN: { surnames: indianSurnames, male: indianMale, female: indianFemale },
+    BR: { surnames: portugueseSurnames, male: portugueseMale, female: portugueseFemale },
+    RU: { surnames: russianSurnames, male: russianMale, female: russianFemale },
+    TR: { surnames: turkishSurnames, male: turkishMale, female: turkishFemale },
+    SA: { surnames: arabicSurnames, male: arabicMale, female: arabicFemale },
     default: { surnames: englishSurnames, male: englishMale, female: englishFemale }
   }
 
-  const pool = pools[country] || pools.default
+  const pool = pools[country]
+  if (!pool || !pool.surnames?.length || !pool[gender]?.length) {
+    return null
+  }
+
   const surname = randomFrom(pool.surnames)
-  const given = randomFrom(gender === 'male' ? pool.male : pool.female)
+  const given = randomFrom(pool[gender])
   const formatter = pool.formatter || ((last, first) => `${first} ${last}`)
 
   return {
