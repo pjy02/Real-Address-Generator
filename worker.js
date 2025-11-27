@@ -5,7 +5,7 @@ addEventListener('fetch', event => {
 async function handleRequest(request) {
   const { searchParams } = new URL(request.url)
   const country = searchParams.get('country') || getRandomCountry()
-  let address, name, gender, phone
+  let address, stateProvince, name, gender, phone
 
   for (let i = 0; i < 100; i++) {
     const location = getRandomLocationInCountry(country)
@@ -17,7 +17,9 @@ async function handleRequest(request) {
     const data = await response.json()
 
     if (data && data.address && data.address.house_number && data.address.road && (data.address.city || data.address.town)) {
-      address = formatAddress(data.address, country)
+      const formatted = formatAddress(data.address, country)
+      address = formatted.full
+      stateProvince = formatted.state
       break
     }
   }
@@ -301,6 +303,10 @@ const html = `
             <span class="label">Phone 电话</span>
             <div class="value">${phone}</div>
           </div>
+          <div class="info-tile" onclick="copyToClipboard('${stateProvince || 'Unknown'}')">
+            <span class="label">State / Province 州 / 省</span>
+            <div class="value">${stateProvince || '—'}</div>
+          </div>
           <div class="info-tile" onclick="copyToClipboard('${address}')">
             <span class="label">Address 地址</span>
             <div class="value">${address}</div>
@@ -336,6 +342,7 @@ const html = `
             <th>姓名 Name</th>
             <th>性别 Gender</th>
             <th>电话号码 Phone number</th>
+            <th>州 / 省 State / Province</th>
             <th>地址 Address</th>
           </tr>
         </thead>
@@ -371,6 +378,7 @@ const html = `
         name: '${name}',
         gender: '${gender}',
         phone: '${phone.replace(/[()\\s-]/g, '')}',
+        state: '${stateProvince || ''}',
         address: '${address}'
       };
       savedAddresses.push(newEntry);
@@ -391,6 +399,7 @@ const html = `
         const nameCell = row.insertCell();
         const genderCell = row.insertCell();
         const phoneCell = row.insertCell();
+        const stateCell = row.insertCell();
         const addressCell = row.insertCell();
 
         // 删除按钮
@@ -408,6 +417,7 @@ const html = `
         nameCell.textContent = entry.name;
         genderCell.textContent = entry.gender;
         phoneCell.textContent = entry.phone;
+        stateCell.textContent = entry.state || '—';
         addressCell.textContent = entry.address;
       });
     }
@@ -463,7 +473,17 @@ function getRandomLocationInCountry(country) {
 }
 
 function formatAddress(address, country) {
-  return `${address.house_number} ${address.road}, ${address.city || address.town || address.village}, ${address.postcode || ''}, ${country}`;
+  const state = address.state || address.state_district || address.province || address.region
+  const city = address.city || address.town || address.village
+  const parts = [
+    `${address.house_number} ${address.road}`,
+    city,
+    state,
+    address.postcode,
+    country
+  ].filter(Boolean)
+
+  return { full: parts.join(', '), state }
 }
 
 
