@@ -210,6 +210,15 @@ const html = `
       margin-left: 6px;
       font-weight: 900;
     }
+    .btn.is-loading::after {
+      content: '…';
+      margin-left: 6px;
+      font-weight: 900;
+    }
+    .btn.primary { background: linear-gradient(120deg, var(--accent), #1d4ed8); box-shadow: 0 10px 30px rgba(37, 99, 235, 0.25); }
+    .btn.secondary { background: linear-gradient(120deg, #0ea5e9, var(--accent-2)); box-shadow: 0 10px 30px rgba(14, 165, 233, 0.25); }
+    .btn:hover { transform: translateY(-1px); opacity: 0.95; }
+    .btn:active { transform: translateY(0); }
     .copied {
       position: absolute;
       top: 12px;
