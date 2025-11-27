@@ -5,7 +5,7 @@ addEventListener('fetch', event => {
 async function handleRequest(request) {
   const { searchParams } = new URL(request.url)
   const country = searchParams.get('country') || getRandomCountry()
-  let address, stateProvince, cityName, streetLine, name, gender, phone
+  let address, stateProvince, cityName, streetLine, postalCode, name, gender, phone
 
   for (let i = 0; i < 100; i++) {
     const location = getRandomLocationInCountry(country)
@@ -22,6 +22,7 @@ async function handleRequest(request) {
       stateProvince = formatted.state
       cityName = formatted.city
       streetLine = formatted.street
+      postalCode = formatted.postalCode
       break
     }
   }
@@ -301,13 +302,17 @@ const html = `
             <span class="label">State / Province 州 / 省</span>
             <div class="value">${stateProvince || '—'}</div>
           </div>
+          <div class="info-tile" onclick="copyToClipboard('${cityName || 'Unknown'}')">
+            <span class="label">City 城市</span>
+            <div class="value">${cityName || '—'}</div>
+          </div>
           <div class="info-tile" onclick="copyToClipboard('${streetLine || 'Unknown'}')">
             <span class="label">Street Address 街道地址</span>
             <div class="value">${streetLine || '—'}</div>
           </div>
-          <div class="info-tile" onclick="copyToClipboard('${cityName || 'Unknown'}')">
-            <span class="label">City 城市</span>
-            <div class="value">${cityName || '—'}</div>
+          <div class="info-tile" onclick="copyToClipboard('${postalCode || 'Unknown'}')">
+            <span class="label">Postal Code 邮政编码</span>
+            <div class="value">${postalCode || '—'}</div>
           </div>
           <div class="info-tile" onclick="copyToClipboard('${address}')">
             <span class="label">Address 地址</span>
@@ -345,8 +350,9 @@ const html = `
             <th>性别 Gender</th>
             <th>电话号码 Phone number</th>
             <th>州 / 省 State / Province</th>
-            <th>街道地址 Street Address</th>
             <th>城市 City</th>
+            <th>街道地址 Street Address</th>
+            <th>邮政编码 Postal Code</th>
             <th>地址 Address</th>
           </tr>
         </thead>
@@ -383,8 +389,9 @@ const html = `
         gender: '${gender}',
         phone: '${phone.replace(/[()\\s-]/g, '')}',
         state: '${stateProvince || ''}',
-        street: '${streetLine || ''}',
         city: '${cityName || ''}',
+        street: '${streetLine || ''}',
+        postalCode: '${postalCode || ''}',
         address: '${address}'
       };
       savedAddresses.push(newEntry);
@@ -406,8 +413,9 @@ const html = `
         const genderCell = row.insertCell();
         const phoneCell = row.insertCell();
         const stateCell = row.insertCell();
-        const streetCell = row.insertCell();
         const cityCell = row.insertCell();
+        const streetCell = row.insertCell();
+        const postalCodeCell = row.insertCell();
         const addressCell = row.insertCell();
 
         // 删除按钮
@@ -426,8 +434,9 @@ const html = `
         genderCell.textContent = entry.gender;
         phoneCell.textContent = entry.phone;
         stateCell.textContent = entry.state || '—';
-        streetCell.textContent = entry.street || '—';
         cityCell.textContent = entry.city || '—';
+        streetCell.textContent = entry.street || '—';
+        postalCodeCell.textContent = entry.postalCode || '—';
         addressCell.textContent = entry.address;
       });
     }
@@ -501,15 +510,16 @@ function formatAddress(address, country) {
   const state = address.state || address.state_district || address.province || address.region
   const city = address.city || address.town || address.village
   const street = address.house_number && address.road ? `${address.house_number} ${address.road}` : address.road || ''
+  const postalCode = address.postcode
   const parts = [
-    street,
     city,
+    street,
     state,
-    address.postcode,
+    postalCode,
     country
   ].filter(Boolean)
 
-  return { full: parts.join(', '), state, city, street }
+  return { full: parts.join(', '), state, city, street, postalCode }
 }
 
 
