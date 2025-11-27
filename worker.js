@@ -2,28 +2,35 @@ addEventListener('fetch', event => {
   event.respondWith(handleRequest(event.request))
 })
 
+const addressCache = new Map()
+const CACHE_TTL_MS = 5 * 60 * 1000
+const MAX_CACHE_ENTRIES = 50
+
 async function handleRequest(request) {
   const { searchParams } = new URL(request.url)
   const country = searchParams.get('country') || getRandomCountry()
   let address, stateProvince, cityName, streetLine, postalCode, name, gender, phone
 
-  for (let i = 0; i < 100; i++) {
-    const location = getRandomLocationInCountry(country)
-    const apiUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}&zoom=18&addressdetails=1`
+  const cachedAddress = getCachedAddress(country)
+  if (cachedAddress) {
+    ({ full: address, state: stateProvince, city: cityName, street: streetLine, postalCode } = cachedAddress)
+  }
 
-    const response = await fetch(apiUrl, {
-      headers: { 'User-Agent': 'Cloudflare Worker' }
-    })
-    const data = await response.json()
+  if (!address) {
+    for (let i = 0; i < 100; i++) {
+      const location = getRandomLocationInCountry(country)
+      const data = await fetchReverseGeocodeWithRetry(location)
 
-    if (data && data.address && data.address.house_number && data.address.road && (data.address.city || data.address.town)) {
-      const formatted = formatAddress(data.address, country)
-      address = formatted.full
-      stateProvince = formatted.state
-      cityName = formatted.city
-      streetLine = formatted.street
-      postalCode = formatted.postalCode
-      break
+      if (data && data.address && data.address.house_number && data.address.road && (data.address.city || data.address.town)) {
+        const formatted = formatAddress(data.address, country)
+        address = formatted.full
+        stateProvince = formatted.state
+        cityName = formatted.city
+        streetLine = formatted.street
+        postalCode = formatted.postalCode
+        cacheAddress(country, formatted)
+        break
+      }
     }
   }
 
@@ -548,6 +555,58 @@ const html = `
   return new Response(html, {
     headers: { 'content-type': 'text/html;charset=UTF-8' },
   })
+}
+
+function getCachedAddress(country) {
+  const cached = addressCache.get(country)
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.value
+  }
+  if (cached) {
+    addressCache.delete(country)
+  }
+  return null
+}
+
+function cacheAddress(country, formatted) {
+  if (addressCache.size >= MAX_CACHE_ENTRIES) {
+    let oldestKey
+    let oldestTimestamp = Infinity
+    for (const [key, entry] of addressCache.entries()) {
+      if (entry.timestamp < oldestTimestamp) {
+        oldestTimestamp = entry.timestamp
+        oldestKey = key
+      }
+    }
+    if (oldestKey) addressCache.delete(oldestKey)
+  }
+
+  addressCache.set(country, { value: formatted, timestamp: Date.now() })
+}
+
+async function fetchReverseGeocodeWithRetry(location) {
+  const apiUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}&zoom=18&addressdetails=1`
+  let delay = 200
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const response = await fetch(apiUrl, {
+        headers: { 'User-Agent': 'Cloudflare Worker' }
+      })
+      if (response.ok) {
+        return await response.json()
+      }
+    } catch (err) {
+      // ignore individual fetch errors and retry with backoff
+    }
+
+    if (attempt < 2) {
+      await new Promise(resolve => setTimeout(resolve, delay))
+      delay *= 2
+    }
+  }
+
+  return null
 }
 
 function getRandomLocationInCountry(country) {
