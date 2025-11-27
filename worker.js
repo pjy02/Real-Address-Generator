@@ -600,30 +600,34 @@ function getRandomCountry() {
 
 function getCountryOptions(selectedCountry) {
   const countries = [
-    { name: "United States 美国", code: "US" },
-    { name: "United Kingdom 英国", code: "UK" },
-    { name: "France 法国", code: "FR" },
-    { name: "Germany 德国", code: "DE" },
-    { name: "China 中国", code: "CN" },
-    { name: "Taiwan 中国台湾", code: "TW" },
-    { name: "Hong Kong 中国香港", code: "HK" }, 
-    { name: "Japan 日本", code: "JP" },
-    { name: "India 印度", code: "IN" },
-    { name: "Australia 澳大利亚", code: "AU" },
-    { name: "Brazil 巴西", code: "BR" },
-    { name: "Canada 加拿大", code: "CA" },
-    { name: "Russia 俄罗斯", code: "RU" },
-    { name: "South Africa 南非", code: "ZA" },
-    { name: "Mexico 墨西哥", code: "MX" },
-    { name: "South Korea 韩国", code: "KR" },
-    { name: "Italy 意大利", code: "IT" },
-    { name: "Spain 西班牙", code: "ES" },
-    { name: "Turkey 土耳其", code: "TR" },
-    { name: "Saudi Arabia 沙特阿拉伯", code: "SA" },
-    { name: "Argentina 阿根廷", code: "AR" },
-    { name: "Egypt 埃及", code: "EG" },
-    { name: "Nigeria 尼日利亚", code: "NG" },
-    { name: "Indonesia 印度尼西亚", code: "ID" }
+    { name: "United States 美国", english: "United States", code: "US" },
+    { name: "United Kingdom 英国", english: "United Kingdom", code: "UK" },
+    { name: "France 法国", english: "France", code: "FR" },
+    { name: "Germany 德国", english: "Germany", code: "DE" },
+    { name: "China 中国", english: "China", code: "CN" },
+    { name: "Taiwan 中国台湾", english: "Taiwan", code: "TW" },
+    { name: "Hong Kong 中国香港", english: "Hong Kong", code: "HK" },
+    { name: "Japan 日本", english: "Japan", code: "JP" },
+    { name: "India 印度", english: "India", code: "IN" },
+    { name: "Australia 澳大利亚", english: "Australia", code: "AU" },
+    { name: "Brazil 巴西", english: "Brazil", code: "BR" },
+    { name: "Canada 加拿大", english: "Canada", code: "CA" },
+    { name: "Russia 俄罗斯", english: "Russia", code: "RU" },
+    { name: "South Africa 南非", english: "South Africa", code: "ZA" },
+    { name: "Mexico 墨西哥", english: "Mexico", code: "MX" },
+    { name: "South Korea 韩国", english: "South Korea", code: "KR" },
+    { name: "Italy 意大利", english: "Italy", code: "IT" },
+    { name: "Spain 西班牙", english: "Spain", code: "ES" },
+    { name: "Turkey 土耳其", english: "Turkey", code: "TR" },
+    { name: "Saudi Arabia 沙特阿拉伯", english: "Saudi Arabia", code: "SA" },
+    { name: "Argentina 阿根廷", english: "Argentina", code: "AR" },
+    { name: "Egypt 埃及", english: "Egypt", code: "EG" },
+    { name: "Nigeria 尼日利亚", english: "Nigeria", code: "NG" },
+    { name: "Indonesia 印度尼西亚", english: "Indonesia", code: "ID" }
   ]
-  return countries.map(({ name, code }) => `<option value="${code}" ${code === selectedCountry ? 'selected' : ''}>${name}</option>`).join('')
+
+  return countries
+    .sort((a, b) => a.english.localeCompare(b.english))
+    .map(({ name, code }) => `<option value="${code}" ${code === selectedCountry ? 'selected' : ''}>${name}</option>`)
+    .join('')
 }
